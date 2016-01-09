@@ -33,31 +33,52 @@ var transition = [
     [0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000],// $
 ]
 
+function is_alpha_small(ch){
+    if(ch >= "a".charCodeAt(0) && ch <= "z".charCodeAt(0))
+	return true;
+    else
+	false;
+}
+
 function calc_likelihood(str){
     // if the given string is too short, return 0
     if(str.length <= 2)
 	return 0;
-    // if the given string contains non-alphabetic characters, return 0;
-    else if(str.search(/[^A-Za-z]/) != -1){
-	return 0;
-    }
+
     // calculate the lilelihood of the str to be a Japanese name
     else{
 	var ret = 1.0;
 	var begin = 26;  // magic number that represents '^' (a.k.a. the beginning of a phrase)
 	var end = 27;    // magic number that represents '$' (a.k.a. the end of a phrase)
-	var prev_char = begin;
-
+	var prev_index = begin;
+	var n_non_alphabet = 0;
+	
 	for(var i=0; i<str.length; i++){
-	    var this_char = str.toLowerCase().charCodeAt(i) - "a".charCodeAt(0);
-	    //alert("prev:" + prev_char + ", this:" + this_char);
-	    ret *= transition[prev_char][this_char];
-	    prev_char = this_char;
+	    var this_char_code_small = str.toLowerCase().charCodeAt(i);
+
+	    // skip a non-alphabet characeter
+	    // Note: this is NOT equivalent as "if(!is_alpha(this_char_code))", because
+	    // charCodeAt() for an alphabet with an accent mark (e.g. E') returns the same code as the alphabet w/o the accent (e.g. E),
+	    // while toLowerCase() for the alphabet does NOT convert it to the small counterpart (e.g. e').
+	    if(!is_alpha_small(this_char_code_small)){
+		n_non_alphabet++;
+	    }
+	    // multiple of the transition probability from the previous character to the current character
+	    else{
+		var index = this_char_code_small - "a".charCodeAt(0);
+		try{
+		    ret *= transition[prev_index][index];
+		}
+		catch(e){
+		    alert(str + ", " + prev_index + ", " + index);
+		}
+		prev_index = index;
+	    }
 	}
 
-	ret *= transition[prev_char][end];
+	ret *= transition[prev_index][end];
 
-	return Math.pow(ret, 1.0 / str.length);
+	return Math.pow(ret, 1.0 / (str.length - n_non_alphabet));
     }
 }
 
